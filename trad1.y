@@ -65,12 +65,6 @@ typedef struct s_attr {
 
 axioma:     declaraciones main           { ; }
             | main                       { ; }
-            // |   sentencia ';'            { printf ("%s\n", $1.code) ; }
-            //    r_axioma                 { ; }
-            ;
-
-declaraciones: declaracion ';'           { ; }
-            | declaracion ';' declaraciones 
             ;
 
 main:       MAIN '('')' '{' codigo '}'   { ; }
@@ -91,6 +85,10 @@ sentencia:  declaracion                  { $$.code = $1.code ; }
             //                                $$.code = gen_code (temp) ; }
             | '@' expresion              { sprintf (temp, "(print %s)", $2.code) ;  
                                            $$.code = gen_code (temp) ; }
+            ;
+
+declaraciones: declaracion ';'              { ; }
+            | declaracion ';' declaraciones { ; }
             ;
 
 declaracion: INTEGER r_dec               { $$.code = $2.code ; }
