@@ -1,3 +1,8 @@
+/* 
+ERNESTO GONZALEZ CEREZO, HECTOR FUERTES MUNOZ, 214
+100522276@alumnos.uc3m.es, 100522401@alumnos.uc3m.es
+*/
+
 %{                          // SECCION 1 Declaraciones de C-Yacc
 
 #include <stdio.h>
