@@ -76,9 +76,6 @@ codigo:     sentencia ';'                { ; }
             ;
 
 
-// r_axioma:                                { ; } // lambda
-//             |   axioma                   { ; }
-//             ;
 
 sentencia:  declaracion                  { $$.code = $1.code ; }
             // | IDENTIF '=' expresion      { sprintf (temp, "(setq %s %s)", $1.code, $3.code) ; 
