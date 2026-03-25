@@ -63,13 +63,28 @@ typedef struct s_attr {
 
 %%                            // Seccion 3 Gramatica - Semantico
 
-axioma:       sentencia ';'              { printf ("%s\n", $1.code) ; }
-                r_axioma                 { ; }
+axioma:     declaraciones main           { ; }
+            | main                       { ; }
+            // |   sentencia ';'            { printf ("%s\n", $1.code) ; }
+            //    r_axioma                 { ; }
             ;
 
-r_axioma:                                { ; }
-            |   axioma                   { ; }
+declaraciones: declaracion ';'           { ; }
+            | declaracion ';' declaraciones 
             ;
+
+main:       MAIN '('')' '{' codigo '}'   { ; }
+            | MAIN '('')' '{' '}'        { ; }
+            ;
+
+codigo:     sentencia ';'                { ; }
+            | sentencia ';' codigo       { ; }
+            ;
+
+
+// r_axioma:                                { ; } // lambda
+//             |   axioma                   { ; }
+//             ;
 
 sentencia:  declaracion                  { $$.code = $1.code ; }
             // | IDENTIF '=' expresion      { sprintf (temp, "(setq %s %s)", $1.code, $3.code) ; 
