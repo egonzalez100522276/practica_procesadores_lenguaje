@@ -14,7 +14,7 @@ ERNESTO GONZALEZ CEREZO, HECTOR FUERTES MUNOZ, 214
 
 int yylex () ;
 int yyerror (char *mensaje) ;
-char *mi_malloc (int) ;
+char *my_malloc (int) ;
 char *gen_code (char *) ;
 char *int_to_string (int) ;
 char *char_to_string (char) ;
@@ -77,7 +77,7 @@ sentencia:  declaracion                  { $$.code = $1.code ; }
             | '@' expresion              { sprintf (temp, "(print %s)", $2.code) ;  
                                            $$.code = gen_code (temp) ; }
             ;
-            
+
 declaracion: INTEGER r_dec               { $$.code = $2.code ; }
 
 r_dec: asignacion                        { $$.code = $1.code; }
