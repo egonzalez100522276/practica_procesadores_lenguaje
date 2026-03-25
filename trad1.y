@@ -71,20 +71,24 @@ r_axioma:                                { ; }
             |   axioma                   { ; }
             ;
 
-sentencia:  declaracion                  { ; }
+sentencia:  declaracion                  { $$.code = $1.code ; }
             // | IDENTIF '=' expresion      { sprintf (temp, "(setq %s %s)", $1.code, $3.code) ; 
             //                                $$.code = gen_code (temp) ; }
             | '@' expresion              { sprintf (temp, "(print %s)", $2.code) ;  
                                            $$.code = gen_code (temp) ; }
             ;
-declaracion: INTEGER r_dec
+            
+declaracion: INTEGER r_dec               { $$.code = $2.code ; }
 
-r_dec:      asignacion                   { ; }
-            | asignacion ',' r_dec       { ; }
+r_dec: asignacion                        { $$.code = $1.code; }
+            | asignacion ',' r_dec       {
+                                            sprintf(temp, "%s\n%s", $1.code, $3.code);
+                                            $$.code = gen_code(temp);
+                                         }
             ;
 
-asignacion: IDENTIF                      { sprintf(temp, "(setq %s 0)", $1.code);}
-            | IDENTIF '=' expresion      { sprintf(temp, "(setq %s %s)", $1.code, $3.code);}
+asignacion: IDENTIF                      { sprintf(temp, "(setq %s 0)", $1.code); $$.code = gen_code(temp); } 
+            | IDENTIF '=' expresion      { sprintf(temp, "(setq %s %s)", $1.code, $3.code); $$.code = gen_code(temp); }
             ; 
             
 
