@@ -63,14 +63,15 @@ typedef struct s_attr {
 %token AND     /* && */
 %token OR      /* || */
 
-// %right '='                    
+%right '='                    
 %left OR                        // es la ultima operacion que se debe realizar
 %left AND
 %left EQ NEQ                 
-%left '<' LEQ '>' BEQ
+%left '<' LEQ '>' GEQ
 %left '+' '-'                 // menor orden de precedencia
 %left '*' '/' '%'                // orden de precedencia intermedio
-%left UNARY_SIGN              // mayor orden de precedencia
+%right '!'                    
+%right UNARY_SIGN              // mayor orden de precedencia
 
 %%                            // Seccion 3 Gramatica - Semantico
 
@@ -144,16 +145,50 @@ asignacion_local: IDENTIF                      { sprintf(temp, "(setq %s 0)", $1
 expresion:      termino                  { $$ = $1 ; }
             |   expresion '+' expresion  { sprintf (temp, "(+ %s %s)", $1.code, $3.code) ;
                                            $$.code = gen_code (temp) ; }
+
             |   expresion '-' expresion  { sprintf (temp, "(- %s %s)", $1.code, $3.code) ;
                                            $$.code = gen_code (temp) ; }
+
             |   expresion '*' expresion  { sprintf (temp, "(* %s %s)", $1.code, $3.code) ;
                                            $$.code = gen_code (temp) ; }
+
             |   expresion '/' expresion  { sprintf (temp, "(/ %s %s)", $1.code, $3.code) ;
                                            $$.code = gen_code (temp) ; }
+
+            | expresion '%' expresion    {sprintf(temp, "(mod %s %s)", $1.code, $3.code);
+                                           $$.code = gen_code(temp);}
+
+            | expresion EQ expresion     {sprintf(temp, "(= %s %s)", $1.code, $3.code);
+                                           $$.code = gen_code(temp);}
+
+            | expresion NEQ expresion    {sprintf(temp, "(/= %s %s)", $1.code, $3.code);
+                                          $$.code = gen_code(temp);}
+
+            | expresion '<' expresion    {sprintf(temp, "(< %s %s)", $1.code, $3.code);
+                                          $$.code = gen_code(temp);}
+
+            | expresion '>' expresion    {sprintf(temp, "(> %s %s)", $1.code, $3.code);
+                                          $$.code = gen_code(temp);}
+
+            | expresion LEQ expresion    {sprintf(temp, "(<= %s %s)", $1.code, $3.code);
+                                          $$.code = gen_code(temp);}
+
+            | expresion GEQ expresion    {sprintf(temp, "(>= %s %s)", $1.code, $3.code);
+                                          $$.code = gen_code(temp);}
+
+            | expresion AND expresion    {sprintf(temp, "(and %s %s)", $1.code, $3.code);
+                                          $$.code = gen_code(temp);}
+
+            | expresion OR expresion     {sprintf(temp, "(or %s %s)", $1.code, $3.code);
+                                          $$.code = gen_code(temp);}
+
+            | '!' expresion             {sprintf(temp, "(not %s)", $2.code);
+                                          $$.code = gen_code(temp);}
             ;
 
 termino:        operando                           { $$ = $1 ; }                          
-            |   '+' operando %prec UNARY_SIGN      { $$ = $1 ; }
+            |   '+' operando %prec UNARY_SIGN      { sprintf (temp, "(- %s)", $2.code) ;
+                                                     $$.code = gen_code (temp) ; }  
             |   '-' operando %prec UNARY_SIGN      { sprintf (temp, "(- %s)", $2.code) ;
                                                      $$.code = gen_code (temp) ; }    
             ;
