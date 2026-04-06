@@ -85,19 +85,21 @@ main:       MAIN '(' ')' '{' codigo '}'   {sprintf(temp, "(defun main ()\n%s\n)"
             | MAIN '(' ')' '{' '}'        {$$.code = gen_code("(defun main ()\n)");}
             ;
 
-codigo:     sentencia ';'                { $$.code = $1.code; }
-            | sentencia ';' codigo       { sprintf(temp, "%s\n%s", $1.code, $3.code);
+codigo:     sentencia                { $$.code = $1.code; }
+            | sentencia codigo       { sprintf(temp, "%s\n%s", $1.code, $2.code);
                                            $$.code = gen_code(temp); }
             ;
 
 
 
-sentencia:  declaracion_local                               { $$.code = $1.code ; }
-            | asignacion_sentencia                          { $$.code = $1.code ; }
-            | PUTS '(' STRING ')'                           {sprintf(temp, "(print \"%s\")", $3.code);
+sentencia:  declaracion_local ';'                               { $$.code = $1.code ; }
+            | asignacion_sentencia ';'                         { $$.code = $1.code ; }
+            | PUTS '(' STRING ')' ';'                          {sprintf(temp, "(print \"%s\")", $3.code);
                                                             $$.code = gen_code(temp); }
-            | PRINTF '(' STRING ',' lista_printf ')'        {$$.code = $5.code;}
-          
+            | PRINTF '(' STRING ',' lista_printf ')' ';'       {$$.code = $5.code;}
+
+            | WHILE '(' expresion ')' '{' codigo '}'        {sprintf(temp, "(loop while %s do\n%s)", $3.code, $6.code);
+                                                             $$.code = gen_code(temp);}     
             ;
 
 asignacion_sentencia: IDENTIF '=' expresion    { sprintf(temp, "(setf %s %s)", $1.code, $3.code);
@@ -142,17 +144,17 @@ asignacion_local: IDENTIF                      { sprintf(temp, "(setq %s 0)", $1
             ; 
             
 
-expresion:      termino                  { $$ = $1 ; }
-            |   expresion '+' expresion  { sprintf (temp, "(+ %s %s)", $1.code, $3.code) ;
+expresion:    termino                    { $$ = $1 ; }
+            | expresion '+' expresion    { sprintf (temp, "(+ %s %s)", $1.code, $3.code) ;
                                            $$.code = gen_code (temp) ; }
 
-            |   expresion '-' expresion  { sprintf (temp, "(- %s %s)", $1.code, $3.code) ;
+            | expresion '-' expresion    { sprintf (temp, "(- %s %s)", $1.code, $3.code) ;
                                            $$.code = gen_code (temp) ; }
 
-            |   expresion '*' expresion  { sprintf (temp, "(* %s %s)", $1.code, $3.code) ;
+            | expresion '*' expresion    { sprintf (temp, "(* %s %s)", $1.code, $3.code) ;
                                            $$.code = gen_code (temp) ; }
 
-            |   expresion '/' expresion  { sprintf (temp, "(/ %s %s)", $1.code, $3.code) ;
+            | expresion '/' expresion    { sprintf (temp, "(/ %s %s)", $1.code, $3.code) ;
                                            $$.code = gen_code (temp) ; }
 
             | expresion '%' expresion    {sprintf(temp, "(mod %s %s)", $1.code, $3.code);
