@@ -52,14 +52,24 @@ typedef struct s_attr {
 %token INTEGER       // identifica el tipo entero
 %token STRING
 %token MAIN          // identifica el comienzo del proc. main
-%token WHILE         // identifica el bucle main
 %token PUTS          
 %token PRINTF
+%token WHILE         // identifica el bucle main
 
+%token GEQ     /* >=    Greater or Equal*/
+%token LEQ     /* <=    Less or Equal   */
+%token EQ      /* ==    Equal           */
+%token NEQ     /* !=    Not Equal       */
+%token AND     /* && */
+%token OR      /* || */
 
-%right '='                    // es la ultima operacion que se debe realizar
+// %right '='                    
+%left OR                        // es la ultima operacion que se debe realizar
+%left AND
+%left EQ NEQ                 
+%left '<' LEQ '>' BEQ
 %left '+' '-'                 // menor orden de precedencia
-%left '*' '/'                 // orden de precedencia intermedio
+%left '*' '/' '%'                // orden de precedencia intermedio
 %left UNARY_SIGN              // mayor orden de precedencia
 
 %%                            // Seccion 3 Gramatica - Semantico
@@ -217,6 +227,13 @@ t_keyword keywords [] = { // define las palabras reservadas y los
     "int",         INTEGER,
     "puts",        PUTS,
     "printf",      PRINTF,
+    "while",       WHILE,
+    ">=",          GEQ,
+    "<=",          LEQ,
+    "==",          EQ,
+    "!=",          NEQ,
+    "&&",          AND,
+    "||",          OR,
     // añadir más palabras aquí 
     // (···)
     NULL,          0               // para marcar el fin de la tabla
