@@ -53,7 +53,8 @@ typedef struct s_attr {
 %token STRING
 %token MAIN          // identifica el comienzo del proc. main
 %token WHILE         // identifica el bucle main
-
+%token PUTS          
+%token PRINTF
 
 
 %right '='                    // es la ultima operacion que se debe realizar
@@ -63,41 +64,69 @@ typedef struct s_attr {
 
 %%                            // Seccion 3 Gramatica - Semantico
 
-axioma:     declaraciones main           { ; }
-            | main                       { ; }
+axioma:     declaraciones_globales main           { sprintf(temp, "%s\n%s", $1.code, $2.code);
+                                                    printf("%s\n", temp); }
+            | main                       { printf("%s\n", $1.code); }
             ;
 
-main:       MAIN '('')' '{' codigo '}'   { ; }
-            | MAIN '('')' '{' '}'        { ; }
+main:       MAIN '(' ')' '{' codigo '}'   {sprintf(temp, "(defun main ()\n%s\n)", $5.code);
+                                          $$.code = gen_code(temp); }
+            | MAIN '(' ')' '{' '}'        {$$.code = gen_code("(defun main ()\n)");}
             ;
 
-codigo:     sentencia ';'                { ; }
-            | sentencia ';' codigo       { ; }
+codigo:     sentencia ';'                { $$.code = $1.code; }
+            | sentencia ';' codigo       { sprintf(temp, "%s\n%s", $1.code, $3.code);
+                                           $$.code = gen_code(temp); }
             ;
 
 
 
-sentencia:  declaracion                  { $$.code = $1.code ; }
-            // | IDENTIF '=' expresion      { sprintf (temp, "(setq %s %s)", $1.code, $3.code) ; 
-            //                                $$.code = gen_code (temp) ; }
-            | '@' expresion              { sprintf (temp, "(print %s)", $2.code) ;  
-                                           $$.code = gen_code (temp) ; }
+sentencia:  declaracion_local                               { $$.code = $1.code ; }
+            | asignacion_sentencia                          { $$.code = $1.code ; }
+            | PUTS '(' STRING ')'                           {sprintf(temp, "(print \"%s\")", $3.code);
+                                                            $$.code = gen_code(temp); }
+            | PRINTF '(' STRING ',' lista_printf ')'        {$$.code = $5.code;}
+          
             ;
 
-declaraciones: declaracion ';'              { ; }
-            | declaracion ';' declaraciones { ; }
+asignacion_sentencia: IDENTIF '=' expresion    { sprintf(temp, "(setf %s %s)", $1.code, $3.code);
+                                                $$.code = gen_code(temp); };
+
+lista_printf: expresion                         {sprintf(temp, "(princ %s)", $1.code);
+                                                $$.code = gen_code(temp);}
+            | expresion ',' lista_printf        {sprintf(temp, "(princ %s)\n%s", $1.code, $3.code);
+                                                $$.code = gen_code(temp);};
+                                                
+declaraciones_globales:     declaracion_global ';'                              {$$.code = $1.code;}
+                            | declaracion_global ';' declaraciones_globales     {sprintf(temp, "%s\n%s", $1.code, $3.code);
+                                                                                 $$.code = gen_code(temp);}
+                            ;
+
+declaracion_global:  
+                INTEGER r_dec_global               { $$.code = $2.code ; }
             ;
 
-declaracion: INTEGER r_dec               { $$.code = $2.code ; }
+r_dec_global:
+                asignacion_global                   { $$.code = $1.code; }
+                | asignacion_global ',' r_dec_global { sprintf(temp, "%s\n%s", $1.code, $3.code);
+                                                        $$.code = gen_code(temp); }
+                ;
 
-r_dec: asignacion                        { $$.code = $1.code; }
-            | asignacion ',' r_dec       {
-                                            sprintf(temp, "%s\n%s", $1.code, $3.code);
-                                            $$.code = gen_code(temp);
-                                         }
+asignacion_global: IDENTIF                  { sprintf(temp, "(setq %s 0)", $1.code); $$.code = gen_code(temp); } 
+                    | IDENTIF '=' NUMBER    { sprintf(temp, "(setq %s %d)", $1.code, $3.value); $$.code = gen_code(temp); }
+                    ; 
+
+
+declaracion_local: INTEGER r_dec_local               { $$.code = $2.code ; }
+
+r_dec_local: asignacion_local                        { $$.code = $1.code; }
+            | asignacion_local ',' r_dec_local       {
+                                                    sprintf(temp, "%s\n%s", $1.code, $3.code);
+                                                    $$.code = gen_code(temp);
+                                                }
             ;
 
-asignacion: IDENTIF                      { sprintf(temp, "(setq %s 0)", $1.code); $$.code = gen_code(temp); } 
+asignacion_local: IDENTIF                      { sprintf(temp, "(setq %s 0)", $1.code); $$.code = gen_code(temp); } 
             | IDENTIF '=' expresion      { sprintf(temp, "(setq %s %s)", $1.code, $3.code); $$.code = gen_code(temp); }
             ; 
             
@@ -186,6 +215,8 @@ typedef struct s_keyword { // para las palabras reservadas de C
 t_keyword keywords [] = { // define las palabras reservadas y los
     "main",        MAIN,           // y los token asociados
     "int",         INTEGER,
+    "puts",        PUTS,
+    "printf",      PRINTF,
     // añadir más palabras aquí 
     // (···)
     NULL,          0               // para marcar el fin de la tabla
