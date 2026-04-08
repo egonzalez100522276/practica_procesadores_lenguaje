@@ -55,13 +55,15 @@ typedef struct s_attr {
 %token PUTS          
 %token PRINTF
 %token WHILE         // identifica el bucle main
+%token IF
+%token ELSE
 
-%token GEQ     /* >=    Greater or Equal*/
-%token LEQ     /* <=    Less or Equal   */
-%token EQ      /* ==    Equal           */
-%token NEQ     /* !=    Not Equal       */
-%token AND     /* && */
-%token OR      /* || */
+%token GEQ
+%token LEQ
+%token EQ
+%token NEQ
+%token AND
+%token OR
 
 %right '='                    
 %left OR                        // es la ultima operacion que se debe realizar
@@ -100,6 +102,11 @@ sentencia:  declaracion_local ';'                               { $$.code = $1.c
 
             | WHILE '(' expresion ')' '{' codigo '}'        {sprintf(temp, "(loop while %s do\n%s)", $3.code, $6.code);
                                                              $$.code = gen_code(temp);}     
+            
+            | IF '(' expresion ')' '{' codigo '}' {sprintf(temp, "(if %s (progn\n%s))", $3.code, $6.code);
+                                                    $$.code = gen_code(temp);}
+            | IF '(' expresion ')' '{' codigo '}' ELSE '{' codigo '}' {sprintf(temp, "(if %s \n(progn %s) \n(progn %s))", $3.code, $6.code, $10.code);
+                                                                        $$.code = gen_code(temp);}
             ;
 
 asignacion_sentencia: IDENTIF '=' expresion    { sprintf(temp, "(setf %s %s)", $1.code, $3.code);
@@ -188,8 +195,9 @@ expresion:    termino                    { $$ = $1 ; }
                                           $$.code = gen_code(temp);}
             ;
 
-termino:        operando                           { $$ = $1 ; }                          
-            |   '+' operando %prec UNARY_SIGN      { sprintf (temp, "(- %s)", $2.code) ;
+termino:        operando                           { $$ = $1 ; }          
+
+            |   '+' operando %prec UNARY_SIGN      { sprintf (temp, "(+ %s)", $2.code) ;
                                                      $$.code = gen_code (temp) ; }  
             |   '-' operando %prec UNARY_SIGN      { sprintf (temp, "(- %s)", $2.code) ;
                                                      $$.code = gen_code (temp) ; }    
@@ -271,6 +279,8 @@ t_keyword keywords [] = { // define las palabras reservadas y los
     "!=",          NEQ,
     "&&",          AND,
     "||",          OR,
+    "if",          IF,
+    "else",        ELSE,
     // añadir más palabras aquí 
     // (···)
     NULL,          0               // para marcar el fin de la tabla
