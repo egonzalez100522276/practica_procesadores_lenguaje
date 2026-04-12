@@ -78,6 +78,10 @@ typedef struct s_attr {
 %token FOR
 %token INC
 %token DEC
+%token SWITCH
+%token CASE
+%token DEFAULT
+%token BREAK
 
 %right '='                    
 %left OR                        // es la ultima operacion que se debe realizar
@@ -128,6 +132,9 @@ sentencia:  declaracion_local ';'                               { $$.code = $1.c
                                                                         $$.code = gen_code(temp);}
             | FOR '(' inicializacion_for ';' expresion ';' inc_dec ')' '{' codigo '}' { sprintf(temp, "%s\n(loop while %s do\n%s\n%s)", $3.code, $5.code, $9.code, $7.code);
                                                                                         $$.code = gen_code(temp);}
+            | SWITCH '(' expresion ')' '{' lista_cases '}' {sprintf(temp, "(case %s\n%s)", $3.code, $6.code);
+                                                            $$.code = gen_code(temp);
+                                                           }
                                                                         ;
 
 asignacion_sentencia: IDENTIF '=' expresion    { char *var_name = get_var_name($1.code);
@@ -196,7 +203,22 @@ inicializacion_for: IDENTIF '=' expresion { char *var_name = get_var_name($1.cod
                                             $$.code = gen_code(temp);
                                           }
     ;
-    
+
+lista_cases: case_bloque {$$.code = $1.code;}
+            
+            | lista_cases case_bloque {sprintf(temp, "%s\n%s", $1.code, $2.code);
+                                       $$.code = gen_code(temp);
+                                      }
+            
+          ;
+
+case_bloque: CASE NUMBER ':' codigo BREAK ';' {sprintf(temp, "(%d (progn\n%s))", $2.value, $4.code);
+                                               $$.code = gen_code(temp);
+                                              }
+           | DEFAULT ':' codigo BREAK ';' {sprintf(temp, "(otherwise (progn\n%s))", $3.code);
+                                           $$.code = gen_code(temp);
+                                          }
+           ;
 expresion:    termino                    { $$ = $1 ; }
             | expresion '+' expresion    { sprintf (temp, "(+ %s %s)", $1.code, $3.code) ;
                                            $$.code = gen_code (temp) ; }
@@ -361,6 +383,10 @@ t_keyword keywords [] = { // define las palabras reservadas y los
     "for",         FOR,
     "inc",         INC,
     "dec",         DEC,
+    "switch",       SWITCH,
+    "case",        CASE,
+    "default",     DEFAULT,
+    "break",       BREAK,
 
     // añadir más palabras aquí 
     // (···)
