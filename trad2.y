@@ -181,6 +181,13 @@ llamada_funcion:    IDENTIF '(' ')' {
                     }
                     ;
 
+acceso_vector:      IDENTIF '[' expresion ']' {
+                        char *var_name = get_var_name($1.code);
+                        sprintf(temp, "(aref %s %s)", var_name, $3.code);
+                        $$.code = gen_code(temp);
+                    }
+                ;
+
 parametros_funcion: parametro_funcion {
                         $$.code = $1.code;
                     }
@@ -263,6 +270,10 @@ asignacion_sentencia: IDENTIF '=' expresion    {
                         sprintf(temp, "(setf %s %s)", var_name, $3.code);
                         $$.code = gen_code(temp); 
                     }
+                    | acceso_vector '=' expresion {
+                        sprintf(temp, "(setf %s %s)", $1.code, $3.code);
+                        $$.code = gen_code(temp);
+                    }
                     ;
 
 // Recursividad por la izquierda
@@ -308,6 +319,10 @@ asignacion_global:  IDENTIF {
                     | IDENTIF '=' NUMBER {
                         sprintf(temp, "(setq %s %d)", $1.code, $3.value); $$.code = gen_code(temp);
                     }
+                    | IDENTIF '[' NUMBER ']' {
+                        sprintf(temp, "(setq %s (make-array %d))", $1.code, $3.value);
+                        $$.code = gen_code(temp);
+                    }
                     ; 
 
 
@@ -334,6 +349,11 @@ asignacion_local: IDENTIF {
                 | IDENTIF '=' expresion { 
                     add_local_var($1.code);
                     sprintf(temp, "(setq %s_%s %s)", current_function, $1.code, $3.code); 
+                    $$.code = gen_code(temp);
+                }
+                | IDENTIF '[' NUMBER ']' {
+                    add_local_var($1.code);
+                    sprintf(temp, "(setq %s_%s (make-array %d))", current_function, $1.code, $3.value);
                     $$.code = gen_code(temp);
                 }
             ; 
@@ -462,7 +482,10 @@ operando:       IDENTIF {
                 }
                 |   llamada_funcion {
                         $$ = $1;
-                    }
+                }
+                | acceso_vector {
+                    $$ = $1;
+                }
             ;
 
 
@@ -546,29 +569,24 @@ t_local_var *search_local_var(char *name)
     return NULL;
 }
 
-int is_local_var(char *name) {
-    int i;
-
-    for (i = 0; i < local_var_count; i++) {
-        if (strcmp(local_table[i].name, name) == 0) {
-            return 1;
-        }
-    }
-    return 0;
+int is_local_var(char *name)
+{
+    return search_local_var(name) != NULL;
 }
+
 
 void clear_local_vars() {
     local_var_count = 0;
 }
 
 // Genera dinamicamente el string correcto de la variable dependiento de su entorno
-char* get_var_name(char *name) {
-    int i;
+char* get_var_name(char *name)
+{
+    t_local_var *var;
 
-    for (i = 0; i < local_var_count; i++) {
-        if (strcmp(local_table[i].name, name) == 0) {
-            return local_table[i].translated;
-        }
+    var = search_local_var(name);
+    if (var != NULL) {
+        return var->translated;
     }
 
     return name;
