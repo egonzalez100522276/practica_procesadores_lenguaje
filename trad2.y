@@ -18,11 +18,11 @@ char *gen_code (char *) ;
 char *int_to_string (int) ;
 char *char_to_string (char) ;
 
-// Aumentamos considerablemente el tamaño del buffer temporal para 
+// Aumentamos el tamaño del buffer temporal para 
 // evitar desbordamientos de memoria al juntar bloques grandes de codigo
 char temp [2048] ; 
 
-// -- Novedades Punto 8: Gestion de Variables Locales --
+// Gestion de Variables Locales --
 char current_function[256] = "";     // Guarda el nombre de la funcion actual
 char local_vars[100][256];           // Tabla simple de variables locales
 int local_var_count = 0;             // Contador de variables locales
@@ -75,6 +75,9 @@ typedef struct s_attr {
 %token NEQ
 %token AND
 %token OR
+%token FOR
+%token INC
+%token DEC
 
 %right '='                    
 %left OR                        // es la ultima operacion que se debe realizar
@@ -93,7 +96,7 @@ axioma:     declaraciones_globales main           { sprintf(temp, "%s\n%s", $1.c
             | main                       { printf("%s\n", $1.code); }
             ;
 
-// Subregla util para inicializar el entorno local justo antes de leer el bloque de codigo
+// Subregla util para inicializar el entorno local antes de leer el bloque de codigo
 init_func:  /* vacio */                  { strcpy(current_function, "main"); clear_local_vars(); }
             ;
 
@@ -123,7 +126,9 @@ sentencia:  declaracion_local ';'                               { $$.code = $1.c
                                                     $$.code = gen_code(temp);}
             | IF '(' expresion ')' '{' codigo '}' ELSE '{' codigo '}' {sprintf(temp, "(if %s \n(progn %s) \n(progn %s))", $3.code, $6.code, $10.code);
                                                                         $$.code = gen_code(temp);}
-            ;
+            | FOR '(' inicializacion_for ';' expresion ';' inc_dec ')' '{' codigo '}' { sprintf(temp, "%s\n(loop while %s do\n%s\n%s)", $3.code, $5.code, $9.code, $7.code);
+                                                                                        $$.code = gen_code(temp);}
+                                                                        ;
 
 asignacion_sentencia: IDENTIF '=' expresion    { char *var_name = get_var_name($1.code);
                                                  sprintf(temp, "(setf %s %s)", var_name, $3.code);
@@ -175,7 +180,23 @@ asignacion_local: IDENTIF                      { add_local_var($1.code);
                                            $$.code = gen_code(temp); }
             ; 
             
+inc_dec:    INC '(' IDENTIF ')' { char *var_name = get_var_name($3.code);
+                                  sprintf(temp, "(setf %s (+ %s 1))", var_name, var_name);
+                                  $$.code = gen_code(temp);
+                                }
+            | DEC '(' IDENTIF ')' { char *var_name = get_var_name($3.code);
+                                    sprintf(temp, "(setf %s (- %s 1))", var_name, var_name);
+                                    $$.code = gen_code(temp);
+                                  }
+    ;
 
+
+inicializacion_for: IDENTIF '=' expresion { char *var_name = get_var_name($1.code);
+                                            sprintf(temp, "(setf %s %s)", var_name, $3.code);
+                                            $$.code = gen_code(temp);
+                                          }
+    ;
+    
 expresion:    termino                    { $$ = $1 ; }
             | expresion '+' expresion    { sprintf (temp, "(+ %s %s)", $1.code, $3.code) ;
                                            $$.code = gen_code (temp) ; }
@@ -222,8 +243,7 @@ expresion:    termino                    { $$ = $1 ; }
 
 termino:        operando                           { $$ = $1 ; }          
 
-            |   '+' operando %prec UNARY_SIGN      { sprintf (temp, "(+ %s)", $2.code) ;
-                                                     $$.code = gen_code (temp) ; }  
+            |   '+' operando %prec UNARY_SIGN      {$$ = $2;}  
             |   '-' operando %prec UNARY_SIGN      { sprintf (temp, "(- %s)", $2.code) ;
                                                      $$.code = gen_code (temp) ; }    
             ;
@@ -338,6 +358,10 @@ t_keyword keywords [] = { // define las palabras reservadas y los
     "||",          OR,
     "if",          IF,
     "else",        ELSE,
+    "for",         FOR,
+    "inc",         INC,
+    "dec",         DEC,
+
     // añadir más palabras aquí 
     // (···)
     NULL,          0               // para marcar el fin de la tabla
