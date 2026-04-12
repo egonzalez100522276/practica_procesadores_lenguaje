@@ -23,9 +23,15 @@ char *char_to_string (char) ;
 char temp [2048] ; 
 
 // Gestion de Variables Locales --
-char current_function[256] = "";     // Guarda el nombre de la funcion actual
-char local_vars[100][256];           // Tabla simple de variables locales
-int local_var_count = 0;             // Contador de variables locales
+typedef struct {
+    char *name;
+    char *translated;
+} t_local_var;
+
+t_local_var local_table[100];
+int local_var_count = 0;
+char current_function[256] = "";
+
 
 void add_local_var(char *name);      // Anade a la tabla local
 int is_local_var(char *name);        // Comprueba si esta en la tabla
@@ -114,7 +120,7 @@ axioma:
             }
             ;
 
-// Subregla util para inicializar el entorno local antes de leer el bloque de codigo
+// util para inicializar el entorno local antes de leer el bloque de codigo
 init_func:  /* vacio */  { 
                 strcpy(current_function, "main"); clear_local_vars(); 
             }
@@ -307,6 +313,7 @@ asignacion_global:  IDENTIF {
 declaracion_local: INTEGER r_dec_local {
                     $$.code = $2.code ;
                     }
+                ;
 
 // Recursividad por la izquierda
 r_dec_local: asignacion_local {
@@ -507,14 +514,29 @@ char *my_malloc (int nbytes)       // reserva n bytes de memoria dinamica
 // -- Novedades Punto 8: Implementacion de funciones de Tabla Local --
 
 void add_local_var(char *name) {
+    int i;
+
+    for (i = 0; i < local_var_count; i++) {
+        if (strcmp(local_table[i].name, name) == 0) {
+            return;
+        }
+    }
+
     if (local_var_count < 100) {
-        strcpy(local_vars[local_var_count++], name);
+        local_table[local_var_count].name = gen_code(name);
+
+        sprintf(temp, "%s_%s", current_function, name);
+        local_table[local_var_count].translated = gen_code(temp);
+
+        local_var_count++;
     }
 }
 
 int is_local_var(char *name) {
-    for (int i = 0; i < local_var_count; i++) {
-        if (strcmp(local_vars[i], name) == 0) {
+    int i;
+
+    for (i = 0; i < local_var_count; i++) {
+        if (strcmp(local_table[i].name, name) == 0) {
             return 1;
         }
     }
@@ -527,11 +549,14 @@ void clear_local_vars() {
 
 // Genera dinamicamente el string correcto de la variable dependiento de su entorno
 char* get_var_name(char *name) {
-    if (is_local_var(name)) {
-        char temp_name[512];
-        sprintf(temp_name, "%s_%s", current_function, name);
-        return gen_code(temp_name);
+    int i;
+
+    for (i = 0; i < local_var_count; i++) {
+        if (strcmp(local_table[i].name, name) == 0) {
+            return local_table[i].translated;
+        }
     }
+
     return name;
 }
 
