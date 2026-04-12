@@ -96,9 +96,18 @@ typedef struct s_attr {
 
 %%                            // Seccion 3 Gramatica - Semantico
 
-axioma:     declaraciones_globales main { 
+axioma:     
+            declaraciones_globales lista_funciones main {
+                sprintf(temp, "%s\n%s\n%s", $1.code, $2.code, $3.code);
+                printf("%s\n", temp);
+            }
+            | declaraciones_globales main { 
                 sprintf(temp, "%s\n%s", $1.code, $2.code);
                 printf("%s\n", temp); 
+            }
+            | lista_funciones main {
+                sprintf(temp, "%s\n%s", $1.code, $2.code);
+                printf("%s\n", temp);
             }
             | main { 
                 printf("%s\n", $1.code); 
@@ -120,6 +129,75 @@ main:       MAIN '(' ')' '{' init_func codigo '}' {
             }
             ;
 
+lista_funciones: funcion {
+                    $$.code = $1.code;
+                 }
+                | lista_funciones funcion {
+                    sprintf(temp, "%s\n%s", $1.code, $2.code);
+                    $$.code = gen_code(temp);
+                }
+                ;
+
+funcion:
+        IDENTIF '(' ')' '{' {
+            strcpy(current_function, $1.code);
+            clear_local_vars();
+        } cuerpo_funcion {
+            sprintf(temp, "(defun %s ()\n%s\n)", $1.code, $6.code);
+            $$.code = gen_code(temp);
+        }
+        | IDENTIF '(' {
+            strcpy(current_function, $1.code);
+            clear_local_vars();
+        } parametros_funcion ')' '{' cuerpo_funcion {
+            sprintf(temp, "(defun %s (%s)\n%s\n)", $1.code, $4.code, $7.code);
+            $$.code = gen_code(temp);
+        }
+        ;
+
+cuerpo_funcion:
+        codigo '}' {
+            $$.code = $1.code;
+        }
+        | '}' {
+            $$.code = gen_code("");
+        }
+        ;
+
+llamada_funcion:    IDENTIF '(' ')' {
+                        sprintf(temp, "(%s)", $1.code);
+                        $$.code = gen_code(temp);
+                    }
+                    | IDENTIF '(' lista_parametros_llamada ')' {
+                        sprintf(temp, "(%s %s)", $1.code, $3.code);
+                        $$.code = gen_code(temp);
+                    }
+                    ;
+
+parametros_funcion: parametro_funcion {
+                        $$.code = $1.code;
+                    }
+                    | parametros_funcion ',' parametro_funcion {
+                        sprintf(temp, "%s %s", $1.code, $3.code);
+                        $$.code = gen_code(temp);
+                    }
+                    ;
+
+parametro_funcion:  INTEGER IDENTIF {
+                        add_local_var($2.code);
+                        sprintf(temp, "%s_%s", current_function, $2.code);
+                        $$.code = gen_code(temp);
+                    }
+                    ;
+
+lista_parametros_llamada: expresion {
+                            $$.code = $1.code;
+                         }
+                        | lista_parametros_llamada ',' expresion {
+                                sprintf(temp, "%s %s", $1.code, $3.code);
+                                $$.code = gen_code(temp);
+                        }
+                        ;
 // Cambiado a recursividad por la IZQUIERDA (codigo sentencia) para mayor estabilidad
 codigo:     sentencia { 
                 $$.code = $1.code; 
@@ -162,6 +240,13 @@ sentencia:  declaracion_local ';' {
             }
             | SWITCH '(' expresion ')' '{' lista_cases '}' {
                 sprintf(temp, "(case %s\n%s)", $3.code, $6.code);
+                $$.code = gen_code(temp);
+            }
+            | llamada_funcion ';' {
+                $$.code = $1.code;
+            }
+            | RETURN expresion ';' {
+                sprintf(temp, "(return-from %s %s)", current_function, $2.code);
                 $$.code = gen_code(temp);
             }
             ;
@@ -367,6 +452,9 @@ operando:       IDENTIF {
                 |   '(' expresion ')' { 
                         $$ = $2 ;
                 }
+                |   llamada_funcion {
+                        $$ = $1;
+                    }
             ;
 
 
