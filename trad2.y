@@ -34,6 +34,7 @@ char current_function[256] = "";
 
 
 void add_local_var(char *name);      // Anade a la tabla local
+t_local_var *search_local_var(char *name);  // Busca en la tabla 
 int is_local_var(char *name);        // Comprueba si esta en la tabla
 void clear_local_vars();             // Limpia la tabla al entrar a otra funcion
 char* get_var_name(char *name);      // Devuelve "var" o "func_var"
@@ -513,13 +514,13 @@ char *my_malloc (int nbytes)       // reserva n bytes de memoria dinamica
 
 // -- Novedades Punto 8: Implementacion de funciones de Tabla Local --
 
-void add_local_var(char *name) {
-    int i;
+void add_local_var(char *name)
+{
+    t_local_var *var;
 
-    for (i = 0; i < local_var_count; i++) {
-        if (strcmp(local_table[i].name, name) == 0) {
-            return;
-        }
+    var = search_local_var(name);
+    if (var != NULL) {
+        return;
     }
 
     if (local_var_count < 100) {
@@ -530,6 +531,19 @@ void add_local_var(char *name) {
 
         local_var_count++;
     }
+}
+
+t_local_var *search_local_var(char *name)
+{
+    int i;
+
+    for (i = 0; i < local_var_count; i++) {
+        if (strcmp(local_table[i].name, name) == 0) {
+            return &(local_table[i]);
+        }
+    }
+
+    return NULL;
 }
 
 int is_local_var(char *name) {
