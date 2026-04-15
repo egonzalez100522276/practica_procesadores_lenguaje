@@ -1,5 +1,6 @@
 *.txt
 *.tab.c
+*.tab.h
 *.o
 prueba.c
 *.fs
