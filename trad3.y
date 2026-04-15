@@ -277,14 +277,25 @@ asignacion_sentencia: IDENTIF '=' expresion    {
                     ;
 
 // Recursividad por la izquierda
-lista_printf: expresion {
+printf_item: expresion {
                 sprintf(temp, "(princ %s)", $1.code);
                 $$.code = gen_code(temp);
+             }
+             | STRING {
+                sprintf(temp, "(princ \"%s\")", $1.code);
+                $$.code = gen_code(temp);
+             }
+             ;
+
+
+lista_printf: printf_item {
+                $$.code = $1.code;
             }
-            | lista_printf ',' expresion {
-                sprintf(temp, "%s\n(princ %s)", $1.code, $3.code);
-                $$.code = gen_code(temp); 
-            };
+            | lista_printf ',' printf_item {
+                sprintf(temp, "%s\n%s", $1.code, $3.code);
+                $$.code = gen_code(temp);
+            }
+            ;
                                                 
 // Recursividad por la izquierda
 declaraciones_globales:     declaracion_global ';' {

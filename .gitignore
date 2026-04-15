@@ -3,6 +3,7 @@
 *.o
 prueba.c
 *.fs
+*.lisp
 trad2
 trad3
 back3

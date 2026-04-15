@@ -1,0 +1,26 @@
+(setq primos (make-array 100))
+(setq m 0)
+(defun main ()
+(setq main_v 0)
+(setq main_i 0)
+(setf m 100)
+(setf main_i 1)
+(loop while (< main_i m) do
+(setf (aref primos main_i) 1)
+(setf main_i (+ main_i 1)))
+(setf main_i 2)
+(loop while (< main_i m) do
+(setf main_v (* main_i 2))
+(loop while (< main_v m) do
+(setf (aref primos main_v) 0)
+(setf main_v (+ main_v main_i)))
+(setf main_i (+ main_i 1)))
+(setf main_i 1)
+(loop while (< main_i m) do
+(if (= (aref primos main_i) 1) (progn
+(princ main_i)
+(princ " ")))
+(setf main_i (+ main_i 1)))
+)
+(main)
+ (main)

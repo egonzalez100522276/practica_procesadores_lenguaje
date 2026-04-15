@@ -1,0 +1,17 @@
+(setq primo 0)
+(setq n 0)
+(setq m 0)
+(defun main ()
+(setq main_d 0)
+(setq main_i 0)
+(setq main_p 0)
+(setf main_i 1)
+(setf n 1)
+(setf m 100)
+(setf main_i 1)
+(loop while (<= main_i m) do
+i
+(setf main_i (+ main_i 1)))
+)
+(main)
+ (main)
