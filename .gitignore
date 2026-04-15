@@ -2,3 +2,7 @@
 *.tab.c
 *.o
 prueba.c
+*.fs
+trad2
+trad3
+back3

@@ -16,6 +16,7 @@ char *int_to_string (int) ;
 char *char_to_string (char) ;
 
 char temp [2048] ;
+char global_vars [8192] = "" ;
 
 
 // Definitions for explicit attributes
@@ -38,87 +39,108 @@ typedef struct s_attr {
 %token WHILE         // token for keyword while
 %token LOOP
 %token DO
-%token SETQ
-%token SETF 
 %token DEFUN     
 %token PRINT  
 %token PRINC
 %token AND
 %token IF 
 %token PROGN
+%token SETQ
+%token SETF
+%token MOD
+%token OR
+%token NOT
+%token GEQ
+%token LEQ
+%token NEQ
 
 
 // %prec section not needed in LISP
 
 
 %%                            // Section 3 Grammar - Semantic Actions
-axiom:        exprSeq                           { ; }      // A Lisp program contains a sequence of at least one expression
+axiom:        exprSeq                           { printf("%s%s\n", global_vars, $1.code); }      // A Lisp program contains a sequence of at least one expression
             ;
 
 
-exprSeq:      expression1                       { ; }      // level 1 expressions must exclude specific level 2 expressions. ToDo in the Future
-                 r_exprSeq                      { ; }
+exprSeq:      expression1                       { $$.code = $1.code; }      // level 1 expressions must exclude specific level 2 expressions. ToDo in the Future
+                 r_exprSeq                      { if ($3.code) { sprintf(temp, "%s\n%s", $1.code, $3.code); $$.code = gen_code(temp); } }
             ;
 
 
-r_exprSeq:    exprSeq                           { ; }
-            |  /* lambda */                     { ; }
+r_exprSeq:    exprSeq                           { $$.code = $1.code; }
+            |  /* lambda */                     { $$.code = gen_code(""); }
             ;
 
 
-expression1:  expression                        { ; }  // Lisp can evaluate arithmetical (and similar) expressions in REPL mode
+expression1:  expression                        { $$.code = $1.code; }  // Lisp can evaluate arithmetical (and similar) expressions in REPL mode
                                                        // REPL Mode should print out the evaluated expressions ==> Future TODO for the Forth translation
 
-            | '(' SETQ IDENTIF number ')'       { /* */ }  // This is the declaration of a variable which in Forth has to be of global scope
+            | '(' SETQ IDENTIF number ')'       { 
+                                                  char var_decl[256];
+                                                  sprintf(var_decl, "VARIABLE %s\n", $3.code);
+                                                  if (strstr(global_vars, var_decl) == NULL) strcat(global_vars, var_decl);
+                                                  sprintf(temp, " %d %s ! ", $4.value, $3.code); 
+                                                  $$.code = gen_code(temp);
+                                                }  // This is the declaration of a variable which in Forth has to be of global scope
                                                                                                       
-            | '(' SETF /* */ ')'                { /* */ }    // Using a variable as receiver requires adding the store operator (!) in Forth 
+            | '(' SETF IDENTIF expression ')'   { sprintf(temp, " %s %s ! ", $4.code, $3.code); $$.code = gen_code(temp); }    // Using a variable as receiver requires adding the store operator (!) in Forth 
 
-            | '(' PRINT STRING ')'              { /* */ }
+            | '(' PRINT STRING ')'              { sprintf(temp, " .\" %s\" CR ", $3.code); $$.code = gen_code(temp); }
 
-            | '(' PRINC /* */ ')'               { /* */ }    // Princ should be able to print both expreesions and strings
+            | '(' PRINC expression ')'          { sprintf(temp, " %s . ", $3.code); $$.code = gen_code(temp); }
+            | '(' PRINC STRING ')'              { sprintf(temp, " .\" %s\" ", $3.code); $$.code = gen_code(temp); }    // Princ should be able to print both expreesions and strings
            
-            | '(' PROGN exprSeq ')'             { /* */ }
+            | '(' PROGN exprSeq ')'             { $$.code = $3.code; }
 
-            | '(' MAIN ')'                      { printf (" main\n") ; } // call to the main function 
+            | '(' MAIN ')'                      { $$.code = gen_code(" main "); } // call to the main function 
 
-            | '(' DEFUN MAIN                    { /* */ } 
-                '(' ')' exprSeq ')'             {  /* */ }
+            | '(' DEFUN MAIN                    
+                '(' ')' exprSeq ')'             { sprintf(temp, ": main \n%s\n; ", $6.code); $$.code = gen_code(temp); }
 
-// In real Lisp some expressions like if or Loop-While-Do are only permitted inside defun definitions (level 2 expressions) ==> Future ToDo
-// Level 1 and common expressions (arithmetic etc.) are also permitted inside a defun definition
+            | '(' LOOP WHILE                    
+                 expression                     
+                 DO exprSeq ')'                 { sprintf(temp, " BEGIN %s WHILE %s REPEAT ", $4.code, $6.code); $$.code = gen_code(temp); }
 
-            | '(' LOOP WHILE                    { /* */  }  
-                 expression                     {  /* */ } 
-                 DO exprSeq ')'                 {  /* */ }
+            | '(' ifHead  expression1 ')'       { sprintf(temp, " %s %s THEN ", $2.code, $3.code); $$.code = gen_code(temp); }     // If Expression then Expression1
 
-            | '(' ifHead  expression1 ')'       { printf (" THEN\n") ; }     // If Expression then Expression1
-                                                                             // ifHead is used to avoid conflicts through partial factorization
-
-            | '(' ifHead  expression1           { printf (" ELSE\n") ; }     // If Expression then Expression1 else Expression1
-                 expression1 ')'                {  printf (" THEN\n") ; }    // more than one expression per then or else branch are only allowed nesting them within a PROGN expression
+            | '(' ifHead  expression1           
+                 expression1 ')'                { sprintf(temp, " %s %s ELSE %s THEN ", $2.code, $3.code, $4.code); $$.code = gen_code(temp); }    
             ;
 
 
-ifHead:       IF expression                     { printf (" IF ") ; }        // Real Lisp restricts if conditions to Boolean type expressions (excluding base operands?) ==> Future TOOD
+ifHead:       IF expression                     { sprintf(temp, " %s IF ", $2.code); $$.code = gen_code(temp); }        
             ;
 
 
-expression:   operand                                   { ; }                // Common expressions combine arithmetic, relational and boolean expressions, including base operands.
+expression:   operand                                   { $$.code = $1.code; }                // Common expressions combine arithmetic, relational and boolean expressions, including base operands.
 
-            | '(' '-' expression expression ')'         { printf (" - ") ; }      // binary minus operator 
+            | '(' '-' expression expression ')'         { sprintf(temp, " %s %s - ", $3.code, $4.code); $$.code = gen_code(temp); }      // binary minus operator 
 
-/* - * / MOD AND OR > < GE LE ... NOT */
+            | '(' '+' expression expression ')'         { sprintf(temp, " %s %s + ", $3.code, $4.code); $$.code = gen_code(temp); }
+            | '(' '*' expression expression ')'         { sprintf(temp, " %s %s * ", $3.code, $4.code); $$.code = gen_code(temp); }
+            | '(' '/' expression expression ')'         { sprintf(temp, " %s %s / ", $3.code, $4.code); $$.code = gen_code(temp); }
+            | '(' MOD expression expression ')'         { sprintf(temp, " %s %s MOD ", $3.code, $4.code); $$.code = gen_code(temp); }
+            | '(' AND expression expression ')'         { sprintf(temp, " %s %s AND ", $3.code, $4.code); $$.code = gen_code(temp); }
+            | '(' OR expression expression ')'          { sprintf(temp, " %s %s OR ", $3.code, $4.code); $$.code = gen_code(temp); }
+            | '(' '>' expression expression ')'         { sprintf(temp, " %s %s > ", $3.code, $4.code); $$.code = gen_code(temp); }
+            | '(' '<' expression expression ')'         { sprintf(temp, " %s %s < ", $3.code, $4.code); $$.code = gen_code(temp); }
+            | '(' GEQ expression expression ')'         { sprintf(temp, " %s %s >= ", $3.code, $4.code); $$.code = gen_code(temp); }
+            | '(' LEQ expression expression ')'         { sprintf(temp, " %s %s <= ", $3.code, $4.code); $$.code = gen_code(temp); }
+            | '(' NEQ expression expression ')'         { sprintf(temp, " %s %s <> ", $3.code, $4.code); $$.code = gen_code(temp); }
+            | '(' '=' expression expression ')'         { sprintf(temp, " %s %s = ", $3.code, $4.code); $$.code = gen_code(temp); }
+            | '(' NOT expression ')'                    { sprintf(temp, " %s 0= ", $3.code); $$.code = gen_code(temp); }
 
-            | '(' '-' expression ')'                    { printf (" negate ") ; } // Unary minus operator in Lisp
+            | '(' '-' expression ')'                    { sprintf(temp, " %s negate ", $3.code); $$.code = gen_code(temp); } // Unary minus operator in Lisp
             ;
 
 
-operand:      IDENTIF                            { printf (" %s @ ", $1.code) ; } // To use a variable as an operand requires adding the fetch operator (@)
-            | number                             { ; }
+operand:      IDENTIF                            { sprintf(temp, " %s @ ", $1.code); $$.code = gen_code(temp); } // To use a variable as an operand requires adding the fetch operator (@)
+            | number                             { $$.code = int_to_string($1.value); }
             ;
 
 
-number:       NUMBER                             { printf (" %d ", $1.value) ; }  // number is an auxiliary Non Terminal to be used in the setq initialization
+number:       NUMBER                             { $$.value = $1.value ; }  // number is an auxiliary Non Terminal to be used in the setq initialization
             ;
 
 
@@ -202,6 +224,14 @@ t_keyword keywords [] = {     // define the keywords
     "and",         AND,
     "if",          IF,
     "progn",       PROGN,
+    "setq",        SETQ,
+    "setf",        SETF,
+    "mod",         MOD,
+    "or",          OR,
+    "not",         NOT,
+    "/=",          NEQ,
+    "<=",          LEQ,
+    ">=",          GEQ,
     NULL,          0          // 0 to mark the end of the table
 } ;
 
