@@ -46,6 +46,13 @@ typedef struct s_attr {
 %token AND
 %token IF 
 %token PROGN
+%token OR
+%token NOT
+%token MOD
+%token EQ
+%token NEQ
+%token LEQ
+%token GEQ
 
 
 // %prec section not needed in LISP
@@ -69,27 +76,34 @@ r_exprSeq:    exprSeq                           { ; }
 expression1:  expression                        { ; }  // Lisp can evaluate arithmetical (and similar) expressions in REPL mode
                                                        // REPL Mode should print out the evaluated expressions ==> Future TODO for the Forth translation
 
-            | '(' SETQ IDENTIF number ')'       { printf("VARIABLE %s\n", $3.code); }  // This is the declaration of a variable which in Forth has to be of global scope
+            | '(' SETQ IDENTIF NUMBER ')'       { printf("variable %s\n", $3.code);
+                                                  printf("%d %s !\n", $4.value, $3.code);;
+                                                }  // This is the declaration of a variable which in Forth has to be of global scope
                                                                                                       
-            | '(' SETF IDENTIF expression ')'   { printf(" %s !\n", $3.code); }    // Using a variable as receiver requires adding the store operator (!) in Forth 
+            | '(' SETF IDENTIF expression ')'   { printf("%s !\n", $3.code); }    // Using a variable as receiver requires adding the store operator (!) in Forth 
 
-            | '(' PRINT STRING ')'              { printf("%s .\n", $3.code); }
+            | '(' PRINT STRING ')'              { printf(".\" %s\" \n", $3.code);}
 
-            | '(' PRINC expression ')'          { printf("%s .\n", $3.code); }    // Princ should be able to print both expreesions and strings
+            | '(' PRINC STRING ')'              { printf(".\" %s\" ", $3.code);}
+
+            | '(' PRINT expression ')'          { printf(" . \n");}
+
+            | '(' PRINC expression ')'          { printf(" . ");}    // Princ should be able to print both expreesions and strings
            
-            | '(' PROGN exprSeq ')'             { printf("\n"); }
+            | '(' PROGN exprSeq ')'             { /* */ }
 
-            | '(' MAIN ')'                      { printf("main\n"); } // call to the main function 
+            | '(' MAIN ')'                      { printf (" main\n") ; } // call to the main function 
 
-            | '(' DEFUN MAIN                    { printf("DEFUN MAIN\n"); } 
-                '(' ')' exprSeq ')'             {  printf("\n"); }
+            | '(' DEFUN MAIN                    { printf(" : main \n");}
+                '(' ')' exprSeq ')'             { printf(" ; \n");}
+            
 
 // In real Lisp some expressions like if or Loop-While-Do are only permitted inside defun definitions (level 2 expressions) ==> Future ToDo
 // Level 1 and common expressions (arithmetic etc.) are also permitted inside a defun definition
 
-            | '(' LOOP WHILE                    { /* */ }  
-                 expression                     { /* */ } 
-                 DO exprSeq ')'                 { /* */ }
+            | '(' LOOP WHILE                    { /* */  }  
+                 expression                     {  /* */ } 
+                 DO exprSeq ')'                 {  /* */ }
 
             | '(' ifHead  expression1 ')'       { printf (" THEN\n") ; }     // If Expression then Expression1
                                                                              // ifHead is used to avoid conflicts through partial factorization
@@ -106,6 +120,19 @@ ifHead:       IF expression                     { printf (" IF ") ; }        // 
 expression:   operand                                   { ; }                // Common expressions combine arithmetic, relational and boolean expressions, including base operands.
 
             | '(' '-' expression expression ')'         { printf (" - ") ; }      // binary minus operator 
+            | '(' '+' expression expression ')'         { printf (" + ") ; }
+            | '(' '*' expression expression ')'         { printf("* "); }
+            | '(' '/' expression expression ')'         { printf("/ "); }
+            | '(' AND expression expression ')'         { printf("and "); }
+            | '(' OR expression expression ')'          { printf("or "); }
+            | '(' NOT expression ')'                    { printf("0= "); }
+            | '(' MOD expression expression ')'         { printf("mod "); }
+            | '(' EQ expression expression ')'          { printf("= "); }
+            | '(' NEQ expression expression ')'         { printf("= 0= "); }
+            | '(' '<' expression expression ')'         { printf("< "); }
+            | '(' '>' expression expression ')'         { printf("> "); }
+            | '(' LEQ expression expression ')'         { printf("<= "); }
+            | '(' GEQ expression expression ')'         { printf(">= "); }
 
 /* - * / MOD AND OR > < GE LE ... NOT */
 
@@ -202,6 +229,15 @@ t_keyword keywords [] = {     // define the keywords
     "and",         AND,
     "if",          IF,
     "progn",       PROGN,
+    "setq",        SETQ,
+    "setf",        SETF,
+    "or",          OR,
+    "not",         NOT,
+    "mod",         MOD,
+    "=",           EQ,
+    "/=",          NEQ,
+    "<=",          LEQ,
+    ">=",          GEQ,
     NULL,          0          // 0 to mark the end of the table
 } ;
 
@@ -304,8 +340,10 @@ int yylex ()
     yylval.code = gen_code (temp_str) ; 
     symbol = search_keyword (yylval.code) ;
     if (symbol == NULL) { // is not reserved word -> iderntifrier  
+//               printf ("\nDEV: IDENTIF %s\n", yylval.code) ;    // PARA DEPURAR
             return (IDENTIF) ;
         } else {
+//               printf ("\nDEV: OTRO %s\n", yylval.code) ;       // PARA DEPURAR
             return (symbol->token) ;
         }
     }
@@ -324,7 +362,9 @@ int yylex ()
         }
     }
 
+//    printf ("\nDEV: LITERAL %d #%c#\n", (int) c, c) ;      // PARA DEPURAR
     if (c == EOF || c == 255 || c == 26) {
+//         printf ("tEOF ") ;                                // PARA DEPURAR
         return (0) ;
     }
 
