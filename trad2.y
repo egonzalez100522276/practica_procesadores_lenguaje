@@ -233,7 +233,7 @@ sentencia:  declaracion_local ';' {
                 $$.code = gen_code(temp); 
             }
             | PRINTF '(' STRING ',' lista_printf ')' ';' {
-                sprintf(temp, "(princ \"%s\")\n%s", $3.code, $5.code);
+                sprintf(temp, "%s", $5.code);
                 $$.code = gen_code(temp);
             }
             | WHILE '(' expresion ')' '{' codigo '}' {
