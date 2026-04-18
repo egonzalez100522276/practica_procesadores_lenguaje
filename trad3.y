@@ -128,11 +128,11 @@ init_func:  /* vacio */  {
             ;
 
 main:       MAIN '(' ')' '{' init_func codigo '}' {
-                sprintf(temp, "(defun main ()\n%s\n)\n(main)", $6.code);
+                sprintf(temp, "(defun main ()\n%s\n)", $6.code);
                 $$.code = gen_code(temp); 
             }
             | MAIN '(' ')' '{' init_func '}' {
-                $$.code = gen_code("(defun main ()\n)\n(main)");
+                $$.code = gen_code("(defun main ()\n)");
             }
             ;
 
