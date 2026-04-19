@@ -1,3 +1,7 @@
+/* ERNESTO GONZALEZ CEREZO, HECTOR FUERTES MUNOZ, 214
+100522276@alumnos.uc3m.es, 100522401@alumnos.uc3m.es
+*/
+
 %{                          // SECTION 1 Declarations for C-Bison
 #include <stdio.h>
 #include <ctype.h>            // tolower()
