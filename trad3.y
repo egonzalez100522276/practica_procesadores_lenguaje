@@ -233,8 +233,7 @@ sentencia:  declaracion_local ';' {
                 $$.code = gen_code(temp); 
             }
             | PRINTF '(' STRING ',' lista_printf ')' ';' {
-                sprintf(temp, "%s", $5.code);
-                $$.code = gen_code(temp);
+                $$.code = $5.code;
             }
             | WHILE '(' expresion ')' '{' codigo '}' {
                 sprintf(temp, "(loop while %s do\n%s)", $3.code, $6.code);
@@ -249,7 +248,7 @@ sentencia:  declaracion_local ';' {
                 $$.code = gen_code(temp);
             }
             | FOR '(' inicializacion_for ';' expresion ';' inc_dec ')' '{' codigo '}' { 
-                sprintf(temp, "%s\n(loop while %s do\n%s\n%s)", $3.code, $5.code, $9.code, $7.code);
+                sprintf(temp, "%s\n(loop while %s do\n%s\n%s)", $3.code, $5.code, $10.code, $7.code);
                 $$.code = gen_code(temp);
             }
             | SWITCH '(' expresion ')' '{' lista_cases '}' {
@@ -286,7 +285,6 @@ printf_item: expresion {
                 $$.code = gen_code(temp);
              }
              ;
-
 
 lista_printf: printf_item {
                 $$.code = $1.code;
