@@ -139,7 +139,7 @@ main:       MAIN '(' ')' '{' init_func codigo '}' {
 lista_funciones: funcion {
                     $$.code = $1.code;
                  }
-                | lista_funciones funcion {
+                | funcion lista_funciones {
                     sprintf(temp, "%s\n%s", $1.code, $2.code);
                     $$.code = gen_code(temp);
                 }
@@ -191,7 +191,7 @@ acceso_vector:      IDENTIF '[' expresion ']' {
 parametros_funcion: parametro_funcion {
                         $$.code = $1.code;
                     }
-                    | parametros_funcion ',' parametro_funcion {
+                    | parametro_funcion ',' parametros_funcion {
                         sprintf(temp, "%s %s", $1.code, $3.code);
                         $$.code = gen_code(temp);
                     }
@@ -207,16 +207,16 @@ parametro_funcion:  INTEGER IDENTIF {
 lista_parametros_llamada: expresion {
                             $$.code = $1.code;
                          }
-                        | lista_parametros_llamada ',' expresion {
+                        | expresion ',' lista_parametros_llamada {
                                 sprintf(temp, "%s %s", $1.code, $3.code);
                                 $$.code = gen_code(temp);
                         }
                         ;
-// Cambiado a recursividad por la IZQUIERDA (codigo sentencia) para mayor estabilidad
+                        
 codigo:     sentencia { 
                 $$.code = $1.code; 
             }
-            | codigo sentencia  { 
+            | sentencia codigo  { 
                 sprintf(temp, "%s\n%s", $1.code, $2.code);
                 $$.code = gen_code(temp); 
             }
@@ -289,7 +289,7 @@ printf_item: expresion {
 lista_printf: printf_item {
                 $$.code = $1.code;
             }
-            | lista_printf ',' printf_item {
+            | printf_item ',' lista_printf {
                 sprintf(temp, "%s\n%s", $1.code, $3.code);
                 $$.code = gen_code(temp);
             }
@@ -299,8 +299,8 @@ lista_printf: printf_item {
 declaraciones_globales:     declaracion_global ';' {
                                 $$.code = $1.code;
                             }
-                            | declaraciones_globales declaracion_global ';' {
-                                sprintf(temp, "%s\n%s", $1.code, $2.code);
+                            | declaracion_global ';' declaraciones_globales {
+                                sprintf(temp, "%s\n%s", $1.code, $3.code);
                                 $$.code = gen_code(temp);
                             }
                             ;
@@ -316,7 +316,7 @@ r_dec_global:
                 asignacion_global {
                     $$.code = $1.code;
                 }
-                | r_dec_global ',' asignacion_global {
+                | asignacion_global ',' r_dec_global {
                     sprintf(temp, "%s\n%s", $1.code, $3.code);
                     $$.code = gen_code(temp);
                 }
@@ -344,7 +344,7 @@ declaracion_local: INTEGER r_dec_local {
 r_dec_local: asignacion_local {
                 $$.code = $1.code;
             }
-            | r_dec_local ',' asignacion_local {
+            | asignacion_local ',' r_dec_local {
                 sprintf(temp, "%s\n%s", $1.code, $3.code);
                 $$.code = gen_code(temp);
             }
@@ -390,7 +390,7 @@ inicializacion_for: IDENTIF '=' expresion {
 lista_cases: case_bloque {
                 $$.code = $1.code;
             }
-            | lista_cases case_bloque {
+            | case_bloque lista_cases {
                 sprintf(temp, "%s\n%s", $1.code, $2.code);
                 $$.code = gen_code(temp);
             }
