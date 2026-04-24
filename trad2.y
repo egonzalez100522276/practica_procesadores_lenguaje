@@ -212,7 +212,6 @@ lista_parametros_llamada: expresion {
                                 $$.code = gen_code(temp);
                         }
                         ;
-// Cambiado a recursividad por la IZQUIERDA (codigo sentencia) para mayor estabilidad
 codigo:     sentencia { 
                 $$.code = $1.code; 
             }
@@ -276,7 +275,6 @@ asignacion_sentencia: IDENTIF '=' expresion    {
                     }
                     ;
 
-// Recursividad por la izquierda
 lista_printf: expresion {
                 sprintf(temp, "(princ %s)", $1.code);
                 $$.code = gen_code(temp);
@@ -286,7 +284,6 @@ lista_printf: expresion {
                 $$.code = gen_code(temp); 
             };
                                                 
-// Recursividad por la izquierda
 declaraciones_globales:     declaracion_global ';' {
                                 $$.code = $1.code;
                             }
@@ -302,7 +299,6 @@ declaracion_global:
                 }
             ;
 
-// Recursividad por la izquierda
 r_dec_global:
                 asignacion_global {
                     $$.code = $1.code;
@@ -331,7 +327,6 @@ declaracion_local: INTEGER r_dec_local {
                     }
                 ;
 
-// Recursividad por la izquierda
 r_dec_local: asignacion_local {
                 $$.code = $1.code;
             }
