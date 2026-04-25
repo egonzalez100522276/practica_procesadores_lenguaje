@@ -21,3 +21,4 @@ main() {
     printf("%d", cuadrado(resultado));
     printf("%d", global_v);
 }
+//@ (main)

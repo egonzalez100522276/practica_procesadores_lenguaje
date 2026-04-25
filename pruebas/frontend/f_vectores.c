@@ -17,3 +17,4 @@ main() {
     printf("%d", v_global[0]);
     printf("%d", v_local[5]);
 }
+//@ (main)
