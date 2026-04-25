@@ -1,0 +1,20 @@
+(setq a 5)
+(setq b 10)
+
+(defun main ()
+  (if (or (> a 10) (= b 10))
+      (print "OR funciona (B es 10)")
+      (print "OR falla")
+  )
+
+  (if (/= a b)
+      (print "A y B son distintos")
+      (print "A y B son iguales")
+  )
+  (if (<= a 5)
+      (print "A es <= 5")
+      (print "A es > 5")
+  )
+)
+
+(main)
