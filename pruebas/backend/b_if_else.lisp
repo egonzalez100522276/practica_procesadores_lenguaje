@@ -1,0 +1,8 @@
+(setq a 10)
+(defun main ()
+  (if (> a 5)
+      (print "A es mayor que 5")
+      (print "A es menor o igual a 5")
+  )
+)
+(main)
